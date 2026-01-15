@@ -1,6 +1,5 @@
 discord.py
 python-dotenv
 pymongo
-dnspython
 requests
 flask
