@@ -16,20 +16,28 @@ MONGO_URI = os.getenv('MONGO_URI')
 # --- PRUEBA DE CONEXIÓN ROBUSTA ---
 print("🔌 Conectando con la base de datos...")
 try:
-    # Si MONGO_URI está vacío, el MongoClient lanzará error antes de intentar localhost
     if not MONGO_URI:
         raise ValueError("No se encontró MONGO_URI en el archivo .env")
         
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-    # El 'ping' confirma que Atlas nos ha dejado entrar
+    # Usamos directConnection=True y quitamos el reintentar escrituras para simplificar
+    client = MongoClient(
+        MONGO_URI,
+        serverSelectionTimeoutMS=5000,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
+        connectTimeoutMS=10000,
+        socketTimeoutMS=10000
+    )
+    
+    # Comprobamos la conexión
     client.admin.command('ping')
     db = client['code_and_canas_db']
     coleccion = db['puntos_karma']
     print("✅ Conexión a MongoDB Atlas establecida con éxito")
 except Exception as e:
     print(f"❌ ERROR CRÍTICO DE CONEXIÓN: {e}")
-    print("Asegúrate de que MONGO_URI en el .env sea correcto y que tu IP esté permitida en Atlas.")
 
+    
 intents = discord.Intents.default()
 intents.message_content = True 
 
