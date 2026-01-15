@@ -22,11 +22,10 @@ try:
     # Usamos directConnection=True y quitamos el reintentar escrituras para simplificar
     client = MongoClient(
         MONGO_URI,
-        serverSelectionTimeoutMS=5000,
-        tls=True,
-        tlsAllowInvalidCertificates=True,
-        connectTimeoutMS=10000,
-        socketTimeoutMS=10000
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000,
+        tlsAllowInvalidCertificates=True, # Obligatorio
+        tls=True
     )
     
     # Comprobamos la conexión
@@ -37,7 +36,7 @@ try:
 except Exception as e:
     print(f"❌ ERROR CRÍTICO DE CONEXIÓN: {e}")
 
-    
+
 intents = discord.Intents.default()
 intents.message_content = True 
 
