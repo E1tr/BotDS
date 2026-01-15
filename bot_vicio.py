@@ -6,12 +6,25 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 from flask import Flask
 from threading import Thread
+import datetime
 
 # 1. Cargar configuración
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 STEAM_API_KEY = os.getenv('STEAM_API_KEY')
 MONGO_URI = os.getenv('MONGO_URI')
+
+PALABRAS_PROHIBIDAS = [
+    "droga", "prostitucion", "prostituta", "puta", "escort",
+    "marihuana", "hierba", "weed", "porro", "canuto", "peta",
+    "dry", "sift", "hash", "hachis", "polen", "bellota",
+    "cocaina", "farlopa", "farlu", "perico", "nieve", "cloro",
+    "cristal", "mdma", "extasis", "merca", "caballo", "heroina",
+    "camello", "dealer", "punto de venta"
+]
+
+
+
 
 # --- PRUEBA DE CONEXIÓN ROBUSTA ---
 print("🔌 Conectando con la base de datos...")
@@ -41,6 +54,54 @@ intents = discord.Intents.default()
 intents.message_content = True 
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+
+    contenido = message.content.lower()
+
+    # Comprobamos si alguna palabra de la lista está en el mensaje
+    if any(palabra in contenido for palabra in PALABRAS_PROHIBIDAS):
+        try:
+            pro_id = str(message.author.id)
+            usuario = coleccion.find_one({"_id": pro_id})
+            
+            if not usuario:
+                usuario = {"_id": pro_id, "puntos": 0, "avisos_lenguaje": 0}
+            
+            # Sumamos aviso
+            avisos = usuario.get("avisos_lenguaje", 0) + 1
+            usuario["avisos_lenguaje"] = avisos
+            coleccion.replace_one({"_id": pro_id}, usuario, upsert=True)
+
+            # Lógica de baneo: 1h la primera, 24h las siguientes
+            if avisos == 1:
+                tiempo = datetime.timedelta(hours=1)
+                txt_tiempo = "1 horita para que reflexiones."
+            else:
+                tiempo = datetime.timedelta(hours=24)
+                txt_tiempo = "24 horazas por reincidente y notas."
+
+            # Aplicar castigo
+            await message.author.timeout(tiempo, reason="Tráfico de influencias o lenguaje de camello")
+            
+            # Limpiar el chat
+            await message.delete()
+
+            # El recadito humillante
+            await message.channel.send(
+                f"🚨 ¡A la puta calle {message.author.mention}! Te vas **{txt_tiempo}** \n"
+                f"Eres un gilipollas, aquí no queremos drogas ni movidas. Controla el lenguaje o no vuelves. 🤐"
+            )
+            return # Salimos para que no procese otros comandos con la palabra prohibida
+
+        except Exception as e:
+            print(f"Error en el sistema de baneo: {e}")
+
+    # Para que sigan funcionando el resto de comandos (!top, etc)
+    await bot.process_commands(message)
 
 # 2. Eventos
 @bot.event
