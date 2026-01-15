@@ -4,6 +4,8 @@ import requests
 from discord.ext import commands
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from flask import Flask
+from threading import Thread
 
 # 1. Cargar configuración
 load_dotenv()
@@ -127,5 +129,20 @@ async def stats_cs(ctx, steam_id: str):
 async def reset_mes(ctx):
     coleccion.delete_many({})
     await ctx.send("🧹 Marcador de MongoDB limpiado.")
+
+@app.route('/')
+def home():
+    return "Bot is alive!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+
+
+keep_alive()
 
 bot.run(TOKEN)
