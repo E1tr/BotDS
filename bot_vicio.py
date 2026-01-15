@@ -130,6 +130,8 @@ async def reset_mes(ctx):
     coleccion.delete_many({})
     await ctx.send("🧹 Marcador de MongoDB limpiado.")
 
+app = Flask('')
+
 @app.route('/')
 def home():
     return "Bot is alive!"
